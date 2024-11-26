@@ -22,29 +22,30 @@ dict* dict_init(void) {
 }
 
 bool dict_addword(dict* p, const char* wd) {
-    if (!p || !wd) return false;
+    if (p == NULL || wd == NULL) return false;
 
     dict* current = p;
-    for (const char* c = wd; *c != '\0'; c++) {
-        int index = char_to_index(*c);
-        if (index == -1) return false;
+    for (const char* c = wd; *c; ++c) {
+        int index = *c - 'a';
+        if (*c == '\'') index = 26; // Special case for apostrophe
 
-        if (!current->dwn[index]) {
-            current->dwn[index] = dict_init();
-            if (!current->dwn[index]) return false;
-            current->dwn[index]->up = current;
+        if (current->dwn[index] == NULL) {
+            // Allocate memory for the next node and initialize it
+            current->dwn[index] = (dict*)malloc(sizeof(dict));
+            memset(current->dwn[index], 0, sizeof(dict));
+            current->dwn[index]->up = current; // Set parent pointer
         }
-        current = current->dwn[index];
+        current = current->dwn[index]; // Move to the next node
     }
 
-    if (current->terminal) {
-        current->freq++;
-        return false; // Word already exists
+    if (!current->terminal) { // If the word is not already in the dictionary
+        current->terminal = true; // Mark this node as the end of a word
+        current->freq = 1;        // Initialize frequency to 1
+        return true;              // Indicate that a new word was added
+    } else {
+        current->freq++; // Increment frequency if the word already exists
+        return false;    // Indicate that the word already existed
     }
-
-    current->terminal = true;
-    current->freq = 1;
-    return true; // New word added
 }
 
 int dict_nodecount(const dict* p) {
